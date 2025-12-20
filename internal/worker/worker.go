@@ -37,8 +37,18 @@ func NewWorkerStats(workerType WorkerType, outputType OutputType, outputPerTick 
 	}, nil
 }
 
+// WorkMessage represents the message structure that workers will send to the broker
+type WorkMessage struct {
+	WorkerID   string     `json:"worker_id"`
+	WorkerType WorkerType `json:"worker_type"`
+	OutputType OutputType `json:"output_type"`
+	Amount     float32    `json:"amount"`
+	Message    string     `json:"message"`
+}
+
 // Worker represents the minimum interface that any worker must implement to be able to do some work
 type Worker interface {
 	Work(ctx context.Context) error
 	Stats() *WorkerStats
+	Message() *WorkMessage
 }

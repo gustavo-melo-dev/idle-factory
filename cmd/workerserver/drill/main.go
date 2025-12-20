@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/gustavo-melo-dev/idle-factory/internal/broker"
 	"github.com/gustavo-melo-dev/idle-factory/internal/worker"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type MiningDrill struct {
@@ -15,78 +15,25 @@ type MiningDrill struct {
 }
 
 func (m MiningDrill) Work(ctx context.Context) error {
+	exchange, routingKey, queueName := "work", "drill", "work.drill"
+
 	defer m.Ticker.Stop()
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil {
-		log.Fatalf("failed to dial RabbitMQ: %v", err)
-	}
+
+	conn := broker.Connect()
 	defer conn.Close()
 
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("failed to open channel: %v", err)
-	}
+	ch := broker.GetChannel(conn)
 	defer ch.Close()
-	err = ch.ExchangeDeclare(
-		"work",  // name
-		"topic", // type
-		true,    // durable
-		false,   // auto-delete
-		false,   // internal
-		false,   // no-wait
-		nil,     // args
-	)
-	if err != nil {
-		log.Fatalf("failed to declare exchange work: %v", err)
-	}
 
-	q, err := ch.QueueDeclare(
-		"work.drill",
-		true,  // durable
-		false, // auto-delete
-		false, // exclusive
-		false, // no-wait
-		nil,   // args
-	)
-	if err != nil {
-		log.Fatalf("failed to declare queue work.drill: %v", err)
-	}
-
-	err = ch.QueueBind(
-		q.Name,  // queue
-		"drill", // routing key
-		"work",  // exchange
-		false,   // no-wait
-		nil,     // args
-	)
-	if err != nil {
-		log.Fatalf(
-			"failed to bind queue work.drill to exchange work: %v", err,
-		)
-	}
+	broker.DeclareTopicQueue(ch, exchange, routingKey, queueName)
 
 	for {
 		select {
 		case <-m.Ticker.C:
-			output := fmt.Sprintf(
-				"%s %s just mined %.2f %s",
-				m.WorkerType.String(),
-				m.ID,
-				m.OutputPerTick,
-				m.OutputType.String(),
-			)
-
-			ch.PublishWithContext(
-				ctx,
-				"work",  // exchange
-				"drill", // routing key
-				false,
-				false,
-				amqp.Publishing{
-					ContentType: "application/json",
-					Body:        []byte(output),
-				},
-			)
+			body := m.Message()
+			broker.PublishMessage(ctx, ch, exchange, routingKey, body)
+			m.CyclesComplete++
+			m.TotalOutput += m.OutputPerTick
 		case <-ctx.Done():
 			return nil
 		}
@@ -95,6 +42,16 @@ func (m MiningDrill) Work(ctx context.Context) error {
 
 func (m MiningDrill) Stats() *worker.WorkerStats {
 	return m.WorkerStats
+}
+
+func (m MiningDrill) Message() *worker.WorkMessage {
+	return &worker.WorkMessage{
+		WorkerID:   m.ID,
+		WorkerType: m.WorkerType,
+		OutputType: m.OutputType,
+		Amount:     m.OutputPerTick,
+		Message:    fmt.Sprintf("%s %s just mined %.2f %s", m.WorkerType.String(), m.ID, m.OutputPerTick, m.OutputType.String()),
+	}
 }
 
 func New(interval time.Duration) *MiningDrill {
@@ -109,7 +66,8 @@ func New(interval time.Duration) *MiningDrill {
 }
 
 func main() {
-	drill := New(time.Second)
+	var drill worker.Worker
+	drill = New(time.Second)
 
 	blocker := make(chan struct{})
 
