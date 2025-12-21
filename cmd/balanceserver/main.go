@@ -4,9 +4,12 @@ import (
 	"log"
 
 	"github.com/gustavo-melo-dev/idle-factory/internal/broker"
+	"github.com/gustavo-melo-dev/idle-factory/internal/machine"
+	"github.com/gustavo-melo-dev/idle-factory/internal/state"
 )
 
 func main() {
+	state := state.New()
 	exchange, routingKey, queueName := "work", "drill", "work.drill"
 	conn := broker.Connect()
 	defer conn.Close()
@@ -22,12 +25,13 @@ func main() {
 
 	go func() {
 		for msg := range msgs {
-			workMsg := broker.DecodeDeliveryMessage(msg)
-			log.Print(workMsg.Message)
+			machineMsg := machine.DecodeMessage(msg)
+			state.UpdateResource(machineMsg.ResultResourceType, machineMsg.Amount)
+			log.Print(state)
 			msg.Ack(false)
 		}
 	}()
 
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	log.Print(state)
 	<-blocker
 }

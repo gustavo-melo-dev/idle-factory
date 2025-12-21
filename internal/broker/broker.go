@@ -3,10 +3,8 @@ package broker
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 
-	"github.com/gustavo-melo-dev/idle-factory/internal/worker"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -73,13 +71,8 @@ func DeclareTopicQueue(ch *amqp.Channel, exchange string, routingKey string, que
 }
 
 // PublishMessage publishes a message to the specified exchange with the given routing key.
-func PublishMessage(ctx context.Context, ch *amqp.Channel, exchange string, routingKey string, body *worker.WorkMessage) {
-	bodyJSON, err := json.Marshal(body)
-	if err != nil {
-		log.Fatalf("failed to marshal message: %v", err)
-	}
-
-	err = ch.PublishWithContext(
+func PublishMessage(ctx context.Context, ch *amqp.Channel, exchange string, routingKey string, body []byte) {
+	err := ch.PublishWithContext(
 		ctx,
 		exchange,   // exchange
 		routingKey, // routing key
@@ -87,7 +80,7 @@ func PublishMessage(ctx context.Context, ch *amqp.Channel, exchange string, rout
 		false,
 		amqp.Publishing{
 			ContentType: "application/json",
-			Body:        bodyJSON,
+			Body:        body,
 		},
 	)
 	if err != nil {
@@ -111,15 +104,4 @@ func ConsumeMessages(ch *amqp.Channel, queueName string) <-chan amqp.Delivery {
 	}
 
 	return msgs
-}
-
-// DecodeDeliveryMessage decodes the body of an amqp.Delivery into a WorkMessage.
-func DecodeDeliveryMessage(d amqp.Delivery) *worker.WorkMessage {
-	var msg worker.WorkMessage
-	err := json.Unmarshal(d.Body, &msg)
-	if err != nil {
-		log.Fatalf("failed to unmarshal delivery body: %v", err)
-		return nil
-	}
-	return &msg
 }
