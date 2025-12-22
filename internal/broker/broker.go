@@ -3,14 +3,26 @@ package broker
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // Connect establishes a connection to the RabbitMQ server.
 func Connect() *amqp.Connection {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	host := os.Getenv("RABBITMQ_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("RABBITMQ_PORT")
+	if port == "" {
+		port = "5672"
+	}
+
+	url := fmt.Sprintf("amqp://guest:guest@%s:%s/", host, port)
+	conn, err := amqp.Dial(url)
 	if err != nil {
 		log.Fatalf("failed to dial RabbitMQ: %v", err)
 	}

@@ -1,0 +1,199 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drill-worker
+  labels:
+    app: idle-factory
+    component: drill-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idle-factory
+      component: drill-worker
+  template:
+    metadata:
+      labels:
+        app: idle-factory
+        component: drill-worker
+    spec:
+      containers:
+      - name: drill-worker
+        image: idle-factory-drill:latest
+        imagePullPolicy: Never
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq-service"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: furnace-worker
+  labels:
+    app: idle-factory
+    component: furnace-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idle-factory
+      component: furnace-worker
+  template:
+    metadata:
+      labels:
+        app: idle-factory
+        component: furnace-worker
+    spec:
+      containers:
+      - name: furnace-worker
+        image: idle-factory-furnace:latest
+        imagePullPolicy: Never
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq-service"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab-worker
+  labels:
+    app: idle-factory
+    component: lab-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idle-factory
+      component: lab-worker
+  template:
+    metadata:
+      labels:
+        app: idle-factory
+        component: lab-worker
+    spec:
+      containers:
+      - name: lab-worker
+        image: idle-factory-lab:latest
+        imagePullPolicy: Never
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq-service"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: state-server
+  labels:
+    app: idle-factory
+    component: state-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idle-factory
+      component: state-server
+  template:
+    metadata:
+      labels:
+        app: idle-factory
+        component: state-server
+    spec:
+      containers:
+      - name: state-server
+        image: idle-factory-stateserver:latest
+        imagePullPolicy: Never
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq-service"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  labels:
+    app: idle-factory
+    component: rabbitmq
+spec:
+  selector:
+    app: idle-factory
+    component: rabbitmq
+  ports:
+  - name: amqp
+    port: 5672
+    targetPort: 5672
+  - name: management
+    port: 15672
+    targetPort: 15672
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  labels:
+    app: idle-factory
+    component: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idle-factory
+      component: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: idle-factory
+        component: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5672
+          name: amqp
+        - containerPort: 15672
+          name: management
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
