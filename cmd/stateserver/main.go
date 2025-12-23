@@ -10,28 +10,31 @@ import (
 
 func main() {
 	state := state.New()
-	exchange, routingKey, queueName := "work", "drill", "work.drill"
-	conn := broker.Connect()
-	defer conn.Close()
+	exchange := "work"
+	routingKeys := []string{"drill", "furnace", "lab"}
 
-	ch := broker.GetChannel(conn)
-	defer ch.Close()
-
-	q := broker.DeclareTopicQueue(ch, exchange, routingKey, queueName)
-
-	msgs := broker.ConsumeMessages(ch, q.Name)
+	for _, rk := range routingKeys {
+		listenToMachineWorking(state, exchange, rk)
+	}
 
 	blocker := make(chan struct{})
+	<-blocker
+}
+
+func listenToMachineWorking(state *state.State, exchange string, routingKey string) {
+	conn := broker.Connect()
+	ch := broker.GetChannel(conn)
+
+	queueName := exchange + "." + routingKey
+	q := broker.DeclareTopicQueue(ch, exchange, routingKey, queueName)
 
 	go func() {
+		msgs := broker.ConsumeMessages(ch, q.Name)
 		for msg := range msgs {
-			machineMsg := machine.DecodeMessage(msg)
-			state.UpdateResource(machineMsg.ResultResourceType, machineMsg.Amount)
-			log.Print(state)
+			decoded := machine.DecodeMessage(msg)
+			state.UpdateResource(decoded.ResultResourceType, decoded.Amount)
 			msg.Ack(false)
+			log.Print(state)
 		}
 	}()
-
-	log.Print(state)
-	<-blocker
 }
