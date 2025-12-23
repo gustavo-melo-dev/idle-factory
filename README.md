@@ -4,13 +4,36 @@ a *Factorio* inspired idle game, made for the sole purpose of learning (and havi
 
 # Build
 
-to build this application you first need to ensure you can run kubectl and minikube.
+first, make sure you have docker daemon, kubectl and minikube properly set up in your machine.
 
-firt start minikube
+1. start minikube:
+```sh
 minikube start
+```
 
-then, set the environment to use minikube's docker daemon
+2. set the environment to use minikube's docker daemon (if you are not on windows you can execute `minikube docker-env` and then run the command they provide):
+```sh
 & minikube -p minikube docker-env --shell powershell | Invoke-Expression
+```
 
-to see the logs irl
-kubectl logs -f deployment/state-server
+3. build the docker images inside minikube and make kubernetes deployments (if you are not on windows you can execute the commands from the script individually):
+```sh
+.\build-and-deploy.bat
+```
+
+# Usage
+
+- you can check the logs from the state server by running the command:
+    ```sh
+    kubectl logs -f deployment/state-server
+    ```
+
+- you can check the rabbitmq dashboard at `http://localhost:15672` by running the command:
+    ```sh
+    kubectl port-forward deployment/rabbitmq 15672:15672
+    ```
+
+- you can check kubernetes dashboard by running the command (it will open on your browser automatically):
+    ```sh
+    minikube dashboard
+    ```

@@ -4,9 +4,8 @@ minikube image build -f cmd/workerserver/furnace/Dockerfile -t idle-factory-furn
 minikube image build -f cmd/workerserver/lab/Dockerfile -t idle-factory-lab:latest .
 minikube image build -f cmd/stateserver/Dockerfile -t idle-factory-stateserver:latest .
 
+REM Delete existing deployments to ensure fresh start
+kubectl delete -f k8s.yaml --ignore-not-found=true
+
 REM Deploy to Kubernetes
 kubectl apply -f k8s.yaml
-kubectl rollout restart deployment/idle-factory-state-server 
-kubectl rollout restart deployment/idle-factory-drill-worker
-kubectl rollout restart deployment/idle-factory-furnace-worker
-kubectl rollout restart deployment/idle-factory-lab-worker
