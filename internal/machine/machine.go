@@ -146,7 +146,7 @@ func (m Machine) Work(ctx context.Context, exchange, routingKey, queueName strin
 	ch := broker.GetChannel(conn)
 	defer ch.Close()
 
-	broker.DeclareTopicQueue(ch, exchange, routingKey, queueName)
+	broker.DeclareTopicExchange(ch, exchange)
 
 	for {
 		select {

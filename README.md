@@ -28,12 +28,14 @@ minikube start
     kubectl logs -f deployment/state-server
     ```
 
-- you can check the rabbitmq dashboard at `http://localhost:15672` by running the command:
+- you can check the rabbitmq dashboard by running the command, using the default credentials {guest:guest}:
     ```sh
-    kubectl port-forward deployment/rabbitmq 15672:15672
+    minikube service rabbitmq-service --url
     ```
 
-- you can check kubernetes dashboard by running the command (it will open on your browser automatically):
+- you can check kubernetes dashboard by running the command:
     ```sh
     minikube dashboard
     ```
+
+After you are done you can `kubectl delete -f k8s.yaml --ignore-not-found=true` to stop the cluster.

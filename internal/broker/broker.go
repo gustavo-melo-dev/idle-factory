@@ -39,21 +39,8 @@ func GetChannel(conn *amqp.Connection) *amqp.Channel {
 	return ch
 }
 
-// DeclareTopicQueue declares a topic exchange and a queue, then binds them together using a routing key and returns the queue.
-func DeclareTopicQueue(ch *amqp.Channel, exchange string, routingKey string, queueName string) amqp.Queue {
-	err := ch.ExchangeDeclare(
-		exchange, // name
-		"topic",  // type
-		true,     // durable
-		false,    // auto-delete
-		false,    // internal
-		false,    // no-wait
-		nil,      // args
-	)
-	if err != nil {
-		log.Fatalf("failed to declare exchange %s: %v", queueName, err)
-	}
-
+// DeclareQueue declares a queue with the given name and binds it to the specified exchange and routing key.
+func DeclareQueue(ch *amqp.Channel, exchange string, routingKey string, queueName string) amqp.Queue {
 	q, err := ch.QueueDeclare(
 		queueName,
 		true,  // durable
@@ -80,6 +67,22 @@ func DeclareTopicQueue(ch *amqp.Channel, exchange string, routingKey string, que
 	}
 
 	return q
+}
+
+// DeclareTopicExchange declares a topic exchange with the given name.
+func DeclareTopicExchange(ch *amqp.Channel, exchange string) {
+	err := ch.ExchangeDeclare(
+		exchange, // name
+		"topic",  // type
+		true,     // durable
+		false,    // auto-delete
+		false,    // internal
+		false,    // no-wait
+		nil,      // args
+	)
+	if err != nil {
+		log.Fatalf("failed to declare exchange %s: %v", exchange, err)
+	}
 }
 
 // PublishMessage publishes a message to the specified exchange with the given routing key.
